@@ -64,12 +64,20 @@ if uploaded_file is not None:
             
     # BOTTONE 2: Fuori dall'if precedente! Compare solo se c'è un PDF pronto in memoria.
     if st.session_state.pdf_bytes is not None:
-        st.info("💡 Su iPhone/Android il file verrà salvato nella tua app 'File' o 'Download'.")
-        st.download_button(
-            label="📥 SCARICA IL PDF OTTIMIZZATO",
-            data=st.session_state.pdf_bytes,
-            file_name=f"A4_{uploaded_file.name}",
-            mime="application/pdf",
-            type="primary", 
-            use_container_width=True 
-        )
+        st.info("💡 Su smartphone: clicca il bottone qui sotto per aprire il PDF, poi usa il menu del telefono per salvarlo dove preferisci.")
+        
+        # Convertiamo il PDF in una stringa codificata in Base64
+        b64_pdf = base64.b64encode(st.session_state.pdf_bytes).decode('utf-8')
+        
+        # Creiamo un bottone in HTML personalizzato che apre il file nel browser
+        html_button = f'''
+            <a href="data:application/pdf;base64,{b64_pdf}" target="_blank" 
+               style="display: block; width: 100%; padding: 12px; background-color: #FF4B4B; 
+                      color: white; text-align: center; text-decoration: none; 
+                      font-weight: bold; border-radius: 8px; font-family: sans-serif;">
+               📄 APRI E SALVA IL PDF
+            </a>
+        '''
+        
+        # Mostriamo il bottone nell'interfaccia
+        st.markdown(html_button, unsafe_allow_html=True)
