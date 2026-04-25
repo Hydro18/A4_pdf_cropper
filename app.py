@@ -66,72 +66,16 @@ if uploaded_file is not None:
             
     # BOTTONE 2: Fuori dall'if precedente! Compare solo se c'è un PDF pronto in memoria.
     if st.session_state.pdf_bytes is not None:
-        st.info("💡 Su smartphone: clicca qui per aprire il menu del telefono e scegliere 'Salva su File' o condividere il documento.")
+        st.info("💡 Su smartphone: clicca qui sotto per scaricare il file. Il telefono ti chiederà se vuoi salvarlo o condividerlo.")
         
-        import base64
-        b64_pdf = base64.b64encode(st.session_state.pdf_bytes).decode('utf-8')
         safe_filename = f"A4_{uploaded_file.name}".replace("'", "").replace('"', "")
         
-        # Creiamo un'intera micro-pagina HTML che verrà caricata in modo isolato
-        html_code = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <style>
-                body {{ margin: 0; padding: 0; display: flex; justify-content: center; }}
-                #share-btn {{
-                    width: 100%;
-                    padding: 14px;
-                    background-color: #FF4B4B;
-                    color: white;
-                    border: none;
-                    border-radius: 8px;
-                    font-size: 16px;
-                    font-weight: bold;
-                    cursor: pointer;
-                    font-family: sans-serif;
-                }}
-            </style>
-        </head>
-        <body>
-            <button id="share-btn">📲 SALVA O CONDIVIDI PDF</button>
-
-            <script>
-                const btn = document.getElementById('share-btn');
-
-                btn.addEventListener('click', async () => {{
-                    try {{
-                        const b64Data = "{b64_pdf}";
-                        const filename = "{safe_filename}";
-
-                        // Ricostruisce il file PDF nella memoria isolata dell'iframe
-                        const res = await fetch("data:application/pdf;base64," + b64Data);
-                        const blob = await res.blob();
-                        const file = new File([blob], filename, {{ type: 'application/pdf' }});
-
-                        // Invoca il menu di condivisione nativo di iOS o Android
-                        if (navigator.canShare && navigator.canShare({{ files: [file] }})) {{
-                            await navigator.share({{
-                                files: [file],
-                                title: filename
-                            }});
-                        }} else {{
-                            // Fallback per browser vecchi o desktop
-                            const blobUrl = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = blobUrl;
-                            a.download = filename;
-                            a.click();
-                            URL.revokeObjectURL(blobUrl);
-                        }}
-                    }} catch (error) {{
-                        alert("Errore durante l'apertura del menu: " + error.message);
-                    }}
-                }});
-            </script>
-        </body>
-        </html>
-        """
-        
-        components.html(html_code, height=60)
+        # Usiamo il bottone nativo di Streamlit per i download
+        st.download_button(
+            label="📲 SALVA O CONDIVIDI PDF",
+            data=st.session_state.pdf_bytes,
+            file_name=safe_filename,
+            mime="application/pdf",
+            type="primary",              # Lo colora di rosso/colore primario
+            use_container_width=True     # Lo fa largo quanto lo schermo
+        )
