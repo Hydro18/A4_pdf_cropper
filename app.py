@@ -2,6 +2,7 @@ import streamlit as st
 import fitz  # PyMuPDF
 import io
 import base64
+import streamlit.components.v1 as components
 
 def crop_and_maximize_a4(input_pdf_bytes):
     doc_in = fitz.open(stream=input_pdf_bytes, filetype="pdf")
@@ -65,58 +66,72 @@ if uploaded_file is not None:
             
     # BOTTONE 2: Fuori dall'if precedente! Compare solo se c'è un PDF pronto in memoria.
     if st.session_state.pdf_bytes is not None:
-        st.info("💡 Su smartphone: clicca qui per aprire il menu del telefono e scegliere 'Salva su File' o condividerlo.")
+        st.info("💡 Su smartphone: clicca qui per aprire il menu del telefono e scegliere 'Salva su File' o condividere il documento.")
         
-        # Converte i byte del PDF in stringa Base64 in modo sicuro
         import base64
         b64_pdf = base64.b64encode(st.session_state.pdf_bytes).decode('utf-8')
         safe_filename = f"A4_{uploaded_file.name}".replace("'", "").replace('"', "")
         
-        # Iniettiamo codice HTML e Javascript nativo per forzare il sistema operativo
+        # Creiamo un'intera micro-pagina HTML che verrà caricata in modo isolato
         html_code = f"""
-        <button id="custom-download-btn" style="width: 100%; padding: 14px; background-color: #FF4B4B; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: sans-serif;">
-            📲 SALVA O CONDIVIDI PDF
-        </button>
-
-        <script>
-            // Isola il bottone per evitare conflitti con Streamlit
-            const btn = document.getElementById('custom-download-btn');
-            const newBtn = btn.cloneNode(true);
-            btn.parentNode.replaceChild(newBtn, btn);
-
-            newBtn.addEventListener('click', async () => {{
-                try {{
-                    const b64Data = "{b64_pdf}";
-                    const filename = "{safe_filename}";
-
-                    // 1. Crea il Blob per evitare il crash della memoria
-                    const res = await fetch("data:application/pdf;base64," + b64Data);
-                    const blob = await res.blob();
-                    const file = new File([blob], filename, {{ type: 'application/pdf' }});
-
-                    // 2. Tenta di aprire il menu nativo di iOS/Android (Web Share API)
-                    if (navigator.canShare && navigator.canShare({{ files: [file] }})) {{
-                        await navigator.share({{
-                            files: [file],
-                            title: filename
-                        }});
-                    }} else {{
-                        // 3. Sistema di emergenza se il menu non è supportato: scarica il Blob leggero
-                        const blobUrl = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.style.display = 'none';
-                        a.href = blobUrl;
-                        a.download = filename;
-                        document.body.appendChild(a);
-                        a.click();
-                        URL.revokeObjectURL(blobUrl);
-                    }}
-                }} catch (error) {{
-                    alert("Errore nel salvataggio: " + error.message);
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+                body {{ margin: 0; padding: 0; display: flex; justify-content: center; }}
+                #share-btn {{
+                    width: 100%;
+                    padding: 14px;
+                    background-color: #FF4B4B;
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 16px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    font-family: sans-serif;
                 }}
-            }});
-        </script>
+            </style>
+        </head>
+        <body>
+            <button id="share-btn">📲 SALVA O CONDIVIDI PDF</button>
+
+            <script>
+                const btn = document.getElementById('share-btn');
+
+                btn.addEventListener('click', async () => {{
+                    try {{
+                        const b64Data = "{b64_pdf}";
+                        const filename = "{safe_filename}";
+
+                        // Ricostruisce il file PDF nella memoria isolata dell'iframe
+                        const res = await fetch("data:application/pdf;base64," + b64Data);
+                        const blob = await res.blob();
+                        const file = new File([blob], filename, {{ type: 'application/pdf' }});
+
+                        // Invoca il menu di condivisione nativo di iOS o Android
+                        if (navigator.canShare && navigator.canShare({{ files: [file] }})) {{
+                            await navigator.share({{
+                                files: [file],
+                                title: filename
+                            }});
+                        }} else {{
+                            // Fallback per browser vecchi o desktop
+                            const blobUrl = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = blobUrl;
+                            a.download = filename;
+                            a.click();
+                            URL.revokeObjectURL(blobUrl);
+                        }}
+                    }} catch (error) {{
+                        alert("Errore durante l'apertura del menu: " + error.message);
+                    }}
+                }});
+            </script>
+        </body>
+        </html>
         """
         
-        # unsafe_allow_html=True ci permette di far girare Javascript senza restrizioni
-        st.markdown(html_code, unsafe_allow_html=True)
+        components.html(html_code, height=60)
