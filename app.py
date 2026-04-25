@@ -65,20 +65,58 @@ if uploaded_file is not None:
             
     # BOTTONE 2: Fuori dall'if precedente! Compare solo se c'è un PDF pronto in memoria.
     if st.session_state.pdf_bytes is not None:
-        st.info("💡 Su smartphone: clicca qui sotto per far partire il salvataggio senza bloccare il browser.")
+        st.info("💡 Su smartphone: clicca qui per aprire il menu del telefono e scegliere 'Salva su File' o condividerlo.")
         
-        # Convertiamo il PDF in stringa Base64
+        # Converte i byte del PDF in stringa Base64 in modo sicuro
+        import base64
         b64_pdf = base64.b64encode(st.session_state.pdf_bytes).decode('utf-8')
+        safe_filename = f"A4_{uploaded_file.name}".replace("'", "").replace('"', "")
         
-        # Usiamo l'attributo "download" invece di "target='_blank'"
-        # Questo forza il salvataggio immediato e impedisce al browser di crashare cercando di renderizzare i dati
-        html_button = f'''
-            <a href="data:application/pdf;base64,{b64_pdf}" download="Appunti_A4_Ottimizzati.pdf" 
-               style="display: block; width: 100%; padding: 12px; background-color: #FF4B4B; 
-                      color: white; text-align: center; text-decoration: none; 
-                      font-weight: bold; border-radius: 8px; font-family: sans-serif;">
-               📥 SCARICA IL PDF
-            </a>
-        '''
+        # Iniettiamo codice HTML e Javascript nativo per forzare il sistema operativo
+        html_code = f"""
+        <button id="custom-download-btn" style="width: 100%; padding: 14px; background-color: #FF4B4B; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: sans-serif;">
+            📲 SALVA O CONDIVIDI PDF
+        </button>
+
+        <script>
+            // Isola il bottone per evitare conflitti con Streamlit
+            const btn = document.getElementById('custom-download-btn');
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+
+            newBtn.addEventListener('click', async () => {{
+                try {{
+                    const b64Data = "{b64_pdf}";
+                    const filename = "{safe_filename}";
+
+                    // 1. Crea il Blob per evitare il crash della memoria
+                    const res = await fetch("data:application/pdf;base64," + b64Data);
+                    const blob = await res.blob();
+                    const file = new File([blob], filename, {{ type: 'application/pdf' }});
+
+                    // 2. Tenta di aprire il menu nativo di iOS/Android (Web Share API)
+                    if (navigator.canShare && navigator.canShare({{ files: [file] }})) {{
+                        await navigator.share({{
+                            files: [file],
+                            title: filename
+                        }});
+                    }} else {{
+                        // 3. Sistema di emergenza se il menu non è supportato: scarica il Blob leggero
+                        const blobUrl = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = blobUrl;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        URL.revokeObjectURL(blobUrl);
+                    }}
+                }} catch (error) {{
+                    alert("Errore nel salvataggio: " + error.message);
+                }}
+            }});
+        </script>
+        """
         
-        st.markdown(html_button, unsafe_allow_html=True)
+        # unsafe_allow_html=True ci permette di far girare Javascript senza restrizioni
+        st.markdown(html_code, unsafe_allow_html=True)
