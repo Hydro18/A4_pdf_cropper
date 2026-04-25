@@ -1,6 +1,7 @@
 import streamlit as st
 import fitz  # PyMuPDF
 import io
+import base64
 
 def crop_and_maximize_a4(input_pdf_bytes):
     doc_in = fitz.open(stream=input_pdf_bytes, filetype="pdf")
