@@ -67,16 +67,23 @@ if uploaded_file is not None:
             
     # BOTTONE 2: Fuori dall'if precedente! Compare solo se c'è un PDF pronto in memoria.
     if st.session_state.pdf_bytes is not None:
-        st.info("💡 Su smartphone: clicca qui sotto per scaricare il file. Il telefono ti chiederà se vuoi salvarlo o condividerlo.")
+        st.info("💡 PDF pronto! Clicca il pulsante qui sotto per scaricarlo.")
         
+        # 1. Convertiamo il file in Base64
+        import base64
+        b64_pdf = base64.b64encode(st.session_state.pdf_bytes).decode('utf-8')
         safe_filename = f"A4_{uploaded_file.name}".replace("'", "").replace('"', "")
         
-        # Usiamo il bottone nativo di Streamlit per i download
-        st.download_button(
-            label="📲 SALVA O CONDIVIDI PDF",
-            data=st.session_state.pdf_bytes,
-            file_name=safe_filename,
-            mime="application/pdf",
-            type="primary",              # Lo colora di rosso/colore primario
-            use_container_width=True     # Lo fa largo quanto lo schermo
-        )
+        # 2. Creiamo un vero link HTML <a> che "sembra" un bottone Streamlit
+        html_button = f"""
+        <a href="data:application/pdf;base64,{b64_pdf}" download="{safe_filename}" 
+           style="display: block; text-align: center; width: 100%; padding: 12px 0; 
+                  background-color: #FF4B4B; color: white; border-radius: 8px; 
+                  font-size: 16px; font-weight: bold; text-decoration: none; 
+                  font-family: 'Source Sans Pro', sans-serif; box-sizing: border-box;">
+           📲 SCARICA PDF
+        </a>
+        """
+        
+        # 3. Lo stampiamo direttamente sulla pagina (niente Iframe!)
+        st.markdown(html_button, unsafe_allow_html=True)
