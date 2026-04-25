@@ -65,20 +65,20 @@ if uploaded_file is not None:
             
     # BOTTONE 2: Fuori dall'if precedente! Compare solo se c'è un PDF pronto in memoria.
     if st.session_state.pdf_bytes is not None:
-        st.info("💡 Su smartphone: clicca il bottone qui sotto per aprire il PDF, poi usa il menu del telefono per salvarlo dove preferisci.")
+        st.info("💡 Su smartphone: clicca qui sotto per far partire il salvataggio senza bloccare il browser.")
         
-        # Convertiamo il PDF in una stringa codificata in Base64
+        # Convertiamo il PDF in stringa Base64
         b64_pdf = base64.b64encode(st.session_state.pdf_bytes).decode('utf-8')
         
-        # Creiamo un bottone in HTML personalizzato che apre il file nel browser
+        # Usiamo l'attributo "download" invece di "target='_blank'"
+        # Questo forza il salvataggio immediato e impedisce al browser di crashare cercando di renderizzare i dati
         html_button = f'''
-            <a href="data:application/pdf;base64,{b64_pdf}" target="_blank" 
+            <a href="data:application/pdf;base64,{b64_pdf}" download="Appunti_A4_Ottimizzati.pdf" 
                style="display: block; width: 100%; padding: 12px; background-color: #FF4B4B; 
                       color: white; text-align: center; text-decoration: none; 
                       font-weight: bold; border-radius: 8px; font-family: sans-serif;">
-               📄 APRI E SALVA IL PDF
+               📥 SCARICA IL PDF
             </a>
         '''
         
-        # Mostriamo il bottone nell'interfaccia
         st.markdown(html_button, unsafe_allow_html=True)
