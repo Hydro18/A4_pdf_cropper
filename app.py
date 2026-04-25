@@ -61,6 +61,7 @@ if uploaded_file is not None:
     # BOTTONE 1: type="primary" lo colora, use_container_width=True lo fa largo
     if st.button("✂️ Elabora e Ingrandisci", type="primary", use_container_width=True):
         with st.spinner("Lavoro in corso..."):
+            uploaded_file.seek(0)
             # Salviamo il risultato nella memoria della sessione
             st.session_state.pdf_bytes = crop_and_maximize_a4(uploaded_file.read())
             
