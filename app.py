@@ -67,23 +67,19 @@ if uploaded_file is not None:
             
     # BOTTONE 2: Fuori dall'if precedente! Compare solo se c'è un PDF pronto in memoria.
     if st.session_state.pdf_bytes is not None:
-        st.info("💡 PDF pronto! Clicca il pulsante qui sotto per scaricarlo.")
+        # Calcoliamo il peso del file per debug
+        file_size_mb = len(st.session_state.pdf_bytes) / (1024 * 1024)
         
-        # 1. Convertiamo il file in Base64
-        import base64
-        b64_pdf = base64.b64encode(st.session_state.pdf_bytes).decode('utf-8')
+        st.success(f"✅ PDF pronto! (Dimensione: {file_size_mb:.2f} MB)")
+        st.info("💡 Su smartphone: usa Chrome o Safari. Alcuni browser come Firefox Mobile bloccano i download.")
+        
         safe_filename = f"A4_{uploaded_file.name}".replace("'", "").replace('"', "")
         
-        # 2. Creiamo un vero link HTML <a> che "sembra" un bottone Streamlit
-        html_button = f"""
-        <a href="data:application/pdf;base64,{b64_pdf}" download="{safe_filename}" 
-           style="display: block; text-align: center; width: 100%; padding: 12px 0; 
-                  background-color: #FF4B4B; color: white; border-radius: 8px; 
-                  font-size: 16px; font-weight: bold; text-decoration: none; 
-                  font-family: 'Source Sans Pro', sans-serif; box-sizing: border-box;">
-           📲 SCARICA PDF
-        </a>
-        """
-        
-        # 3. Lo stampiamo direttamente sulla pagina (niente Iframe!)
-        st.markdown(html_button, unsafe_allow_html=True)
+        st.download_button(
+            label="📲 SCARICA IL PDF A4",
+            data=st.session_state.pdf_bytes,
+            file_name=safe_filename,
+            mime="application/octet-stream",
+            type="primary",
+            use_container_width=True
+        )
