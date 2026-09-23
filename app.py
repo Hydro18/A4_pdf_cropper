@@ -112,3 +112,12 @@ else:
             type="primary",
             use_container_width=True,
         )
+
+import base64
+
+b64 = base64.b64encode(st.session_state.pdf_bytes).decode()
+st.markdown(
+    f'<a href="data:application/pdf;base64,{b64}" download="{safe_filename}">'
+    '⬇️ Il bottone non funziona? Tocca qui</a>',
+    unsafe_allow_html=True,
+)
